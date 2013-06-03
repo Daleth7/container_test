@@ -23,48 +23,47 @@ MyContainer& MyContainer::operator=(const MyContainer& original){
 	__data_size = original.__data_size;
 	__capacity = original.__capacity;
 	delete[] __data;
-	__junk = original.__junk;
 	Deepcopy(original);
 }
 void MyContainer::push_back(const T& newdata){
 	if(__data_size == __capacity)
-		resize(__capacity+1);
-	__data[__data_size+1] = newdata;
+		resize(__capacity(1+__resize_factor));
+	__data[__data_size] = newdata;
 	__data_size++;
 }
 void MyContainer::push_back_steal(T& newdata){
 	if(__data_size == __capacity)
-		resize(__capacity+1);
-	__data[__data_size+1] = std::move(newdata);
+		resize(__capacity(1+__resize_factor));
+	__data[__data_size] = std::move(newdata);
 	__data_size++;
 }
 void MyContainer::insert(size_t index, const T& newdata){
 	if( //If index is out-of-bounds and container is full
-		index>__data_size 
+		index>=__data_size 
 		&& __data_size == __capacity
 	){
-		resize(__capacity+1);
-		__data[__data_size+1] = newdata;
+		resize(__capacity(1+__resize_factor));
+		__data[__data_size] = newdata;
 		__data_size++;
 		return;
-	//If index is out-of-bounds
-	}else if(index>__data_size){
-		__data[__data_size+1] = newdata;
+	//If index is out-of-bounds but container is not full
+	}else if(index>=__data_size){
+		__data[__data_size] = newdata;
 		__data_size++;
 		return;
 	//If index is within bounds but container is full
 	}else if(__data_size == capacity)
-		resize(__capacity+1);
+		resize(__capacity(1+__resize_factor));
 	//Shift all elements one spot to the right
-	for(size_t iter(__data_size); iter >= index; --iter)
-		__data[iter+1] = __data=iter;
+	for(size_t iter(__data_size); iter > index; --iter)
+		__data[iter] = __data[iter-1];
 	__data[index] = newdata;
 	__data_size++;
 }
 void MyContainer::insert(const MyContainer::iterator&);
 void MyContainer::pop_back(){
+	if(__data[__capacity-1] != nullptr) --__data_size;
 	delete __data[--__capacity];
-	--__data_size;
 }
 void MyContainer::erase(size_t){
 }
@@ -74,14 +73,17 @@ void MyContainer::resize(size_t);
 void MyContainer::resize(size_t, const T&);
 	//Calls both clear() and resize()
 void MyContainer::reallocate(size_t);
-T& MyContainer::garbage();
+T* MyContainer::garbage(){
+	if(__junk != nullptr) return __junk;
+	return nullptr;
+}
 T& MyContainer::operator[](size_t index){
-	if(index > __capacity-1) return *__junk;
+	if(index >= __capacity) return *__junk;
 	return __data[index];
 }
 //Read-Only
 const T& MyContainer::operator[](size_t index)const{
-	if(index > __capacity-1) return *__junk;
+	if(index >= __capacity) return *__junk;
 	return __data[index];
 }
 size_t MyContainer::size()const;

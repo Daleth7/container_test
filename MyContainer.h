@@ -29,7 +29,7 @@ class MyContainer{
 		void resize(size_t, const T&);
 			//Calls both clear() and resize()
 		void reallocate(size_t);
-		T& garbage();
+		T* garbage();
 		T& operator[](size_t);
 	//Read-Only
 		const T& operator[](size_t)const;
@@ -51,6 +51,7 @@ class MyContainer{
 			*__data,
 			*__junk
 		;
+		static const double __resize_factor(0.25);
 };
 
 class iterator{
