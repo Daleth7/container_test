@@ -1,10 +1,11 @@
 #ifndef MYCONTAINER_H
 #define MYCONTAINER_H
 
-#include <initalizer_list>
+#include <initializer_list>
+#include <cstddef> //size_t
 
-class MyContainer{
 	using T=int;
+class MyContainer{
 	public:
 	//Tests
 		bool empty();
@@ -21,9 +22,9 @@ class MyContainer{
 		void push_back(const T&);
 		void push_back_steal(T&);
 		void insert(size_t, const T&);
-		void insert(const iterator&,const T&);
+		void insert(iterator&,const T&);
 		void insert(
-			const iterator&,
+			iterator&,
 			const iterator&,
 			const iterator&
 		);
@@ -58,8 +59,8 @@ class MyContainer{
 			*__data,
 			*__junk
 		;
-		static const double __resize_factor(0.25);
-		static const int __default_size(7);
+		static constexpr double __resize_factor=0.25;
+		static constexpr int __default_size=7;
 };
 
 class iterator{
@@ -67,6 +68,9 @@ class iterator{
 	//Member Access
 		MyContainer& operator*();
 		MyContainer* operator->();
+	//Subscript
+		T& operator[](size_t);
+		const T& operator[](size_t)const;
 	//Arithmetic
 		iterator& operator=(const iterator&);
 		iterator& operator++();
@@ -77,7 +81,10 @@ class iterator{
 		iterator& operator-(size_t);
 	//Comparison
 		bool operator==(const iterator&);
-		bool operator==(const nullptr_t&=nullptr);
+		bool operator==(std::nullptr_t);
+	//Read-only
+		bool Invalid()const;
+		size_t Position()const;
 	//Constructors and destructor
 		iterator();
 		iterator(T*,size_t);
@@ -86,6 +93,9 @@ class iterator{
 		~iterator();
 	private:
 		T *__raw;
+		size_t __index;
+	//Managers
+		void Invalidate();
 };
 
 #endif //MYCONTAINER_H

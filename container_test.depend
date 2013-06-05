@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1370464950 source:c:\users\depes\documents\github\container_test\main.cpp
+	"MyContainer.h"
+	<iostream>
+
+1370465163 c:\users\depes\documents\github\container_test\mycontainer.h
+	<initializer_list>
+	<cstddef>
+
