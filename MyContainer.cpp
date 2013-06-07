@@ -3,10 +3,13 @@
 #include <utility> //std::move()
 
 using T=int;
+/*************************************************************
+                      MyContainer
+**************************************************************/
 //Tests
 bool MyContainer::empty(){
-	if(__data_size) return true;
-	return false;
+	if(__data_size) return false;
+	return true;
 }
 bool MyContainer::garbage_exists(){
 	if(__junk != nullptr) return true;
@@ -44,6 +47,7 @@ MyContainer& MyContainer::operator=(const MyContainer& original){
 	__capacity = original.__capacity;
 	delete[] __data;
 	DeepCopy(original);
+	return *this;
 }
 void MyContainer::push_back(const T& newdata){
 	if(__data_size == __capacity)
@@ -59,7 +63,7 @@ void MyContainer::push_back_steal(T& newdata){
 }
 void MyContainer::insert(size_t index, const T& newdata){
 	if( //If index is out-of-bounds and container is full
-		index>=__data_size 
+		index>=__data_size
 		&& __data_size == __capacity
 	){
 		resize(__capacity*(1+__resize_factor)+1);
@@ -87,7 +91,7 @@ void MyContainer::insert(
 	size_t hold = pos.Position();
 	if(pos == nullptr) return;
 	else if(__data_size == __capacity){
-		resize(__capacity(1+__resize_factor)+1);
+		resize(__capacity*(1+__resize_factor)+1);
 		pos.Invalidate();
 	}
 	__data[hold] = newdata;
@@ -101,14 +105,14 @@ void MyContainer::insert(
 	size_t hold = pos.Position(), _max(0);
 	if(pos == nullptr) return;
 	else if(__data_size == __capacity){
-		resize(__capacity(1+__resize_factor)+1);
+		resize(__capacity*(1+__resize_factor)+1);
 		pos.Invalidate();
 	}
 	if(first.Position() < second.Position())
 		_max = second.Position()-first.Position();
 	else
 		_max = first.Position()-second.Position();
-	resize(__capacity(1+__resize_factor)+1+_max);
+	resize(__capacity*(1+__resize_factor)+1+_max);
 	//Shift everything one spot to the right
 	for(size_t iter(__data_size); iter > hold; --iter)
 		__data[iter] = __data[iter-1];
@@ -121,7 +125,7 @@ void MyContainer::insert(
 }
 void MyContainer::pop_back(){
 	if((__data+__capacity-1) != nullptr) --__data_size;
-	delete __data[--__capacity];
+	delete (__data+(--__capacity));
 }
 void MyContainer::erase(size_t index){
 	if(index >= __data_size)	return;
@@ -129,23 +133,32 @@ void MyContainer::erase(size_t index){
 		__data[index] = __data[index+1];
 	this->pop_back();
 }
-void MyContainer::erase(iterator&);
+void MyContainer::erase(iterator& pos){
+	for(
+		size_t i(pos.Position());
+		i < __data_size-1;
+		++i
+	) __data[i] = __data[i+1];
+	this->pop_back();
+	pos.Invalidate();
+}
 void MyContainer::clear(){
 	delete[] __data;
 		__data = new T[__default_size];
-	delete __junk;
-		__junk = nullptr;
+	if(__junk != nullptr)
+		delete __junk;
+	__junk = nullptr;
 	__data_size = 0;
 	__capacity = __default_size;
 }
 void MyContainer::resize(size_t newsize){
 	T *__image = new T[__data_size];
-	for(int i(0); i<__data_size; ++i)
+	for(size_t i(0); i<__data_size; ++i)
 		__image[i] = __data[i];
 	delete[] __data;
 	__data = new T[newsize];
 	__capacity = newsize;
-	for(int i(0); (i<__data_size || i<newsize; ++i)
+	for(size_t i(0); i<__data_size || i<newsize; ++i)
 		__data[i] = __image[i];
 	delete[] __image;
 }
@@ -159,8 +172,9 @@ void MyContainer::resize(size_t newsize, const T& filler){
 void MyContainer::reallocate(size_t newsize, const T& filler){
 	delete[] __data;
 		__data = new T[newsize];
-	delete __junk;
-		__junk = nullptr;
+	if(__junk != nullptr)
+		delete __junk;
+	__junk = nullptr;
 	__data_size = __capacity = newsize;
 	for(size_t i(0); i < newsize; ++i)
 		__data[i] = filler;
@@ -170,12 +184,14 @@ T* MyContainer::garbage(){
 	return nullptr;
 }
 T& MyContainer::operator[](size_t index){
-	if(index >= __capacity) return *__junk;
+	if(index >= __capacity && __junk != nullptr) return *__junk;
+	else if(index >= __capacity && __junk == nullptr) return *(__junk = new T);
 	return __data[index];
 }
 //Read-Only
+	//Unable to account for __junk being a null pointer
 const T& MyContainer::operator[](size_t index)const{
-	if(index >= __capacity) return *__junk;
+	if(index >= __capacity && __junk != nullptr) return *__junk;
 	return __data[index];
 }
 size_t MyContainer::size()const{return __data_size;}
@@ -226,70 +242,80 @@ MyContainer::~MyContainer(){
 	if(__data != nullptr) delete[] __data;
 	if(__junk != nullptr) delete __junk;
 }
-void DeepCopy(const MyContainer& original){
+void MyContainer::DeepCopy(const MyContainer& original){
 	__data = new T[original.__capacity];
 	for(size_t iter(0); iter < original.__data_size; ++iter)
-		__data[iter] = (original.__data_size)[iter];
+		__data[iter] = (original.__data)[iter];
 }
-
+/*************************************************************
+                      Iterator
+**************************************************************/
 //Member Access
-MyContainer& 
-	MyContainer::iterator::operator*(){return *__raw;}
-MyContainer* 
-	MyContainer::iterator::operator->(){return *__raw;}
+T& MyContainer::iterator::operator*(){return *__raw;}
+T* MyContainer::iterator::operator->(){return __raw;}
 //Subscript
 T& MyContainer::iterator::operator[](size_t index){return __raw[index];}
-const T& 
+const T&
 	MyContainer::iterator::operator[](size_t index)const{return __raw[index];}
 //Arithmetic
-MyContainer::iterator& 
+MyContainer::iterator&
 	MyContainer::iterator::operator=(const iterator& s){
 		if(this == &s) return *this;
 		__raw = s.__raw;
 		__index = s.__index;
 		return *this;
 }
-MyContainer::iterator& 
+MyContainer::iterator&
 	MyContainer::iterator::operator++(){
 		__raw++;
 		__index++;
 		return *this;
 }
-MyContainer::iterator& 
+MyContainer::iterator&
 	MyContainer::iterator::operator++(int dummy){
 		__raw++;
 		__index++;
 		return *this;
 }
-MyContainer::iterator& 
+MyContainer::iterator&
 	MyContainer::iterator::operator--(){
 		__raw--;
 		__index--;
 		return *this;
 }
-MyContainer::iterator& 
+MyContainer::iterator&
 	MyContainer::iterator::operator--(int dummy){
 		__raw--;
 		__index--;
 		return *this;
 }
-MyContainer::iterator& 
-	MyContainer::iterator::operator+(size_t delta){
+MyContainer::iterator&
+	MyContainer::iterator::operator+=(size_t delta){
 		__raw += delta;
 		__index += delta;
 		return *this;
 }
-MyContainer::iterator& 
-	MyContainer::iterator::operator-(size_t delta){
+MyContainer::iterator&
+	MyContainer::iterator::operator-=(size_t delta){
 		__raw -= delta;
 		__index -= delta;
 		return *this;
 }
+MyContainer::iterator
+	MyContainer::iterator::operator+(size_t delta)
+{return MyContainer::iterator(__raw+delta,__index+delta);}
+MyContainer::iterator
+	MyContainer::iterator::operator-(size_t delta)
+{return MyContainer::iterator(__raw-delta,__index-delta);}
 //Comparison
 bool MyContainer::iterator::operator==(const iterator& s)
 {return (__raw == s.__raw && __index == s.__index);}
 bool MyContainer::iterator::operator==(std::nullptr_t n)
 {return __raw == n;}
+bool MyContainer::iterator::operator!=(const iterator& s)
+{return !(*this == s);}
+bool MyContainer::iterator::operator!=(std::nullptr_t n)
+{return !(*this == n);}
 //Read-only
 bool MyContainer::iterator::Invalid()const{return (__raw == nullptr);}
 size_t MyContainer::iterator::Position()const{return __index;}
@@ -299,15 +325,16 @@ MyContainer::iterator::iterator():
 	__index(0)
 {}
 MyContainer::iterator::iterator(T* data,size_t newindex):
-	__raw(data[newindex]),
-	__index(index)
+	__raw(data+newindex),
+	__index(newindex)
 {}
 MyContainer::iterator::iterator(const iterator& s):
 	__raw(s.__raw),
 	__index(s.__index)
 {}
 MyContainer::iterator::iterator(iterator&& s):
-	MyContainer::iterator::iterator(s):
+	__raw(s.__raw),
+	__index(s.__index)
 {
 	s.__raw = nullptr;
 	s.__index = 0;

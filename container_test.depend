@@ -1,9 +1,14 @@
 # depslib dependency file v1.0
-1370464950 source:c:\users\depes\documents\github\container_test\main.cpp
+1370567235 source:c:\users\depes\documents\github\container_test\main.cpp
 	"MyContainer.h"
 	<iostream>
+	<limits>
 
-1370465163 c:\users\depes\documents\github\container_test\mycontainer.h
+1370567795 c:\users\depes\documents\github\container_test\mycontainer.h
 	<initializer_list>
 	<cstddef>
+
+1370565512 source:c:\users\depes\documents\github\container_test\mycontainer.cpp
+	"MyContainer.h"
+	<utility>
 

@@ -63,11 +63,11 @@ class MyContainer{
 		static constexpr int __default_size=7;
 };
 
-class iterator{
+class MyContainer::iterator{
 	public:
 	//Member Access
-		MyContainer& operator*();
-		MyContainer* operator->();
+		T& operator*();
+		T* operator->();
 	//Subscript
 		T& operator[](size_t);
 		const T& operator[](size_t)const;
@@ -77,11 +77,15 @@ class iterator{
 		iterator& operator++(int);
 		iterator& operator--();
 		iterator& operator--(int);
-		iterator& operator+(size_t);
-		iterator& operator-(size_t);
+		iterator& operator+=(size_t);
+		iterator& operator-=(size_t);
+		iterator operator+(size_t);
+		iterator operator-(size_t);
 	//Comparison
 		bool operator==(const iterator&);
 		bool operator==(std::nullptr_t);
+		bool operator!=(const iterator&);
+		bool operator!=(std::nullptr_t);
 	//Read-only
 		bool Invalid()const;
 		size_t Position()const;
@@ -91,11 +95,11 @@ class iterator{
 		iterator(const iterator&);
 		iterator(iterator&&);
 		~iterator();
+	//Managers
+		void Invalidate();
 	private:
 		T *__raw;
 		size_t __index;
-	//Managers
-		void Invalidate();
 };
 
 #endif //MYCONTAINER_H
