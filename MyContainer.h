@@ -13,20 +13,22 @@ class MyContainer{
 		bool operator==(const MyContainer&);
 	//Iterators
 		class iterator;
+		class reverse_iterator;
 		iterator begin();
 		iterator end();
-		iterator rbegin();
-		iterator rend();
+		reverse_iterator rbegin();
+		reverse_iterator rend();
 	//Managers
 		MyContainer& operator=(const MyContainer&);
 		void push_back(const T&);
 		void push_back_steal(T&);
+		void push_back_steal(MyContainer&);
 		void insert(size_t, const T&);
 		void insert(iterator&,const T&);
 		void insert(
-			iterator&,
-			const iterator&,
-			const iterator&
+			iterator&,       //position in *this
+			const iterator&, //first in other
+			const iterator&  //last in other
 		);
 		void pop_back();
 		void erase(size_t);
@@ -72,19 +74,19 @@ class MyContainer::iterator{
 		T& operator[](size_t);
 		const T& operator[](size_t)const;
 	//Arithmetic
-		iterator& operator=(const iterator&);
-		iterator& operator++();
-		iterator& operator++(int);
-		iterator& operator--();
-		iterator& operator--(int);
-		iterator& operator+=(size_t);
-		iterator& operator-=(size_t);
+		virtual iterator& operator=(const iterator&);
+		virtual iterator& operator++();
+		virtual iterator& operator++(int);
+		virtual iterator& operator--();
+		virtual iterator& operator--(int);
+		virtual iterator& operator+=(size_t);
+		virtual iterator& operator-=(size_t);
 		iterator operator+(size_t);
 		iterator operator-(size_t);
 	//Comparison
-		bool operator==(const iterator&);
+		virtual bool operator==(const iterator&);
 		bool operator==(std::nullptr_t);
-		bool operator!=(const iterator&);
+		virtual bool operator!=(const iterator&);
 		bool operator!=(std::nullptr_t);
 	//Read-only
 		bool Invalid()const;
@@ -94,12 +96,33 @@ class MyContainer::iterator{
 		iterator(T*,size_t);
 		iterator(const iterator&);
 		iterator(iterator&&);
-		~iterator();
+		virtual ~iterator();
 	//Managers
 		void Invalidate();
-	private:
+	protected:
 		T *__raw;
 		size_t __index;
+};
+struct MyContainer::reverse_iterator: public MyContainer::iterator{
+//Arithmetic
+	virtual reverse_iterator& operator=(const reverse_iterator&)final;
+	virtual reverse_iterator& operator++()final;
+	virtual reverse_iterator& operator++(int)final;
+	virtual reverse_iterator& operator--()final;
+	virtual reverse_iterator& operator--(int)final;
+	virtual reverse_iterator& operator+=(size_t)final;
+	virtual reverse_iterator& operator-=(size_t)final;
+	reverse_iterator operator+(size_t);
+	reverse_iterator operator-(size_t);
+//Comparison
+	virtual bool operator==(const reverse_iterator&)final;
+	virtual bool operator!=(const reverse_iterator&)final;
+//Constructors and destructor
+	reverse_iterator();
+	reverse_iterator(T*,size_t);
+	reverse_iterator(const reverse_iterator&);
+	reverse_iterator(reverse_iterator&&);
+	virtual ~reverse_iterator();
 };
 
 #endif //MYCONTAINER_H

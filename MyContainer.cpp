@@ -34,11 +34,11 @@ MyContainer::iterator MyContainer::begin(){
 MyContainer::iterator MyContainer::end(){
 	return MyContainer::iterator(__data,__data_size);
 }
-MyContainer::iterator MyContainer::rbegin(){
-	return MyContainer::iterator(__data,__data_size-1);
+MyContainer::reverse_iterator MyContainer::rbegin(){
+	return MyContainer::reverse_iterator(__data,__data_size-1);
 }
-MyContainer::iterator MyContainer::rend(){
-	return MyContainer::iterator(__data,-1);
+MyContainer::reverse_iterator MyContainer::rend(){
+	return MyContainer::reverse_iterator(__data,-1);
 }
 //Managers
 MyContainer& MyContainer::operator=(const MyContainer& original){
@@ -60,6 +60,11 @@ void MyContainer::push_back_steal(T& newdata){
 		resize(__capacity*(1+__resize_factor)+1);
 	__data[__data_size] = std::move(newdata);
 	__data_size++;
+}
+void MyContainer::push_back_steal(MyContainer& s){
+	for(auto iter(s.begin()); iter != s.end(); ++iter)
+		push_back(*iter);
+	s.clear();
 }
 void MyContainer::insert(size_t index, const T& newdata){
 	if( //If index is out-of-bounds and container is full
@@ -102,24 +107,34 @@ void MyContainer::insert(
 	const MyContainer::iterator& first,
 	const MyContainer::iterator& second
 ){
-	size_t hold = pos.Position(), _max(0);
+	size_t hold = pos.Position();
+	long long _max(second.Position()-first.Position());
+	//Make sure _max is positive
+	if(_max < 0) _max *= -1;
+	//resize container to accomodate new items
 	if(pos == nullptr) return;
-	else if(__data_size == __capacity){
-		resize(__capacity*(1+__resize_factor)+1);
-		pos.Invalidate();
-	}
-	if(first.Position() < second.Position())
-		_max = second.Position()-first.Position();
-	else
-		_max = first.Position()-second.Position();
 	resize(__capacity*(1+__resize_factor)+1+_max);
-	//Shift everything one spot to the right
-	for(size_t iter(__data_size); iter > hold; --iter)
-		__data[iter] = __data[iter-1];
+	pos.Invalidate();
+	//Shift everything _max spots to the right
+	for(
+		size_t iter(__data_size+_max-1); 
+		iter >= hold+_max; 
+		--iter
+	) __data[iter] = __data[iter-_max];
 	//Now copy the data
 	for(
-		size_t iter(hold), iter2(first.Position());
-		iter2<second.Position();
+		size_t
+			iter(hold),
+			iter2(
+				(first.Position()<second.Position()) ?
+				first.Position() :
+				second.Position()
+			);
+		iter2<(
+				(first.Position()<second.Position()) ?
+				second.Position() :
+				first.Position()
+			);
 		++iter, ++iter2
 	)	__data[iter] = first[iter2];
 }
@@ -168,7 +183,6 @@ void MyContainer::resize(size_t newsize, const T& filler){
 	for(size_t i(__data_size); i < newsize; ++i)
 		__data[i] = filler;
 }
-	//Calls both clear() and resize()
 void MyContainer::reallocate(size_t newsize, const T& filler){
 	delete[] __data;
 		__data = new T[newsize];
@@ -267,26 +281,26 @@ MyContainer::iterator&
 }
 MyContainer::iterator&
 	MyContainer::iterator::operator++(){
-		__raw++;
-		__index++;
+		++__raw;
+		++__index;
 		return *this;
 }
 MyContainer::iterator&
 	MyContainer::iterator::operator++(int dummy){
-		__raw++;
-		__index++;
+		++__raw;
+		++__index;
 		return *this;
 }
 MyContainer::iterator&
 	MyContainer::iterator::operator--(){
-		__raw--;
-		__index--;
+		--__raw;
+		--__index;
 		return *this;
 }
 MyContainer::iterator&
 	MyContainer::iterator::operator--(int dummy){
-		__raw--;
-		__index--;
+		--__raw;
+		--__index;
 		return *this;
 }
 MyContainer::iterator&
@@ -317,8 +331,10 @@ bool MyContainer::iterator::operator!=(const iterator& s)
 bool MyContainer::iterator::operator!=(std::nullptr_t n)
 {return !(*this == n);}
 //Read-only
-bool MyContainer::iterator::Invalid()const{return (__raw == nullptr);}
-size_t MyContainer::iterator::Position()const{return __index;}
+bool MyContainer::iterator::Invalid()const
+{return (__raw == nullptr);}
+size_t MyContainer::iterator::Position()const
+{return __index;}
 //Constructors and destructor
 MyContainer::iterator::iterator():
 	__raw(nullptr),
@@ -344,3 +360,86 @@ void MyContainer::iterator::Invalidate(){
 	__raw = nullptr;
 	__index = 0;
 }
+/*************************************************************
+                      Reverse Iterator
+**************************************************************/
+//Arithmetic
+MyContainer::reverse_iterator& 
+	MyContainer::reverse_iterator::operator=
+	(const reverse_iterator& s){
+		if(this == &s) return *this;
+		__raw = s.__raw;
+		__index = s.__index;
+		return *this;
+}
+MyContainer::reverse_iterator& 
+	MyContainer::reverse_iterator::operator++(){
+		--__raw;
+		--__index;
+		return *this;
+}
+MyContainer::reverse_iterator& 
+	MyContainer::reverse_iterator::operator++(int){
+		--__raw;
+		--__index;
+		return *this;
+}
+MyContainer::reverse_iterator& 
+	MyContainer::reverse_iterator::operator--(){
+		++__raw;
+		++__index;
+		return *this;
+}
+MyContainer::reverse_iterator& 
+	MyContainer::reverse_iterator::operator--(int){
+		++__raw;
+		++__index;
+		return *this;
+}
+MyContainer::reverse_iterator& 
+	MyContainer::reverse_iterator::operator+=(size_t delta){
+		__raw += delta;
+		__index += delta;
+		return *this;
+}
+MyContainer::reverse_iterator& 
+	MyContainer::reverse_iterator::operator-=(size_t delta){
+		__raw -= delta;
+		__index -= delta;
+		return *this;
+}
+MyContainer::reverse_iterator 
+	MyContainer::reverse_iterator::operator+(size_t delta)
+{return MyContainer::reverse_iterator(__raw-delta,__index-delta);}
+MyContainer::reverse_iterator 
+	MyContainer::reverse_iterator::operator-(size_t delta)
+{return MyContainer::reverse_iterator(__raw+delta,__index+delta);}
+//Comparison
+bool 
+	MyContainer::reverse_iterator::operator==
+	(const reverse_iterator& s)
+{return (__raw == s.__raw && __index == s.__index);}
+bool 
+	MyContainer::reverse_iterator::operator!=
+	(const reverse_iterator& s)
+{return !(*this == s);}
+//Constructors and destructor
+MyContainer::reverse_iterator::reverse_iterator():
+	MyContainer::iterator::iterator()
+{}
+MyContainer::reverse_iterator::reverse_iterator
+	(T* newdata,size_t newindex):
+		MyContainer::iterator::iterator(newdata,newindex)
+{}
+MyContainer::reverse_iterator::reverse_iterator
+	(const reverse_iterator& s):
+		MyContainer::iterator::iterator(s.__raw,s.__index)
+{}
+MyContainer::reverse_iterator::reverse_iterator
+	(reverse_iterator&& s):
+		MyContainer::iterator::iterator(s.__raw,s.__index)
+{
+	s.__raw = nullptr;
+	s.__index = 0;
+}
+MyContainer::reverse_iterator::~reverse_iterator(){}
